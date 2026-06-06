@@ -615,7 +615,7 @@ serve(async (req) => {
             const { data: inst } = await supabase
               .from('evolution_instances')
               .select('id')
-              .eq('organization_id', orgId)
+              .eq('organization_id', effectiveOrgId)
               .eq('status', 'connected')
               .order('is_default', { ascending: false })
               .order('created_at', { ascending: false })
@@ -641,7 +641,7 @@ serve(async (req) => {
               // TODOS os tipos de mídia (audio, image, video, document, sticker) usam /send/media.
               // O servidor Evolution Go não expõe /send/audio — áudio precisa ir como media com type=audio.
               evoBody = {
-                organization_id: orgId,
+                organization_id: effectiveOrgId,
                 instance_id: evoInstanceId,
                 type: 'media',
                 to: phone,
@@ -655,7 +655,7 @@ serve(async (req) => {
               };
             } else {
               evoBody = {
-                organization_id: orgId,
+                organization_id: effectiveOrgId,
                 instance_id: evoInstanceId,
                 type: 'text',
                 to: phone,
@@ -685,7 +685,7 @@ serve(async (req) => {
             }
           } else {
             // Sem instância Evolution conectada — marca falha visível
-            console.error('[webchat-inbox] No connected Evolution instance for org', orgId);
+            console.error('[webchat-inbox] No connected Evolution instance for org', effectiveOrgId);
             const baseMeta = (insertData.metadata as Record<string, unknown>) || {};
             await supabase
               .from('webchat_messages')
@@ -709,7 +709,7 @@ serve(async (req) => {
         try {
           const igBody: Record<string, unknown> = {
             connection_id: (conversation as any).instagram_connection_id,
-            organization_id: orgId,
+            organization_id: effectiveOrgId,
             conversation_id: body.conversation_id,
             recipient_id: (conversation as any).ig_sender_id,
           };
