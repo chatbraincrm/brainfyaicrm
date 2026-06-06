@@ -279,9 +279,20 @@ const Index = () => {
     return <InitialLoadingScreen />;
   }
 
+  // "Voltar ao App" no painel super admin grava esta flag para evitar
+  // que os redirects abaixo joguem o usuário de volta ao /super-admin.
+  let skipSuperAdminRedirect = false;
+  try {
+    skipSuperAdminRedirect = sessionStorage.getItem('skip_super_admin_redirect') === '1';
+    if (skipSuperAdminRedirect) sessionStorage.removeItem('skip_super_admin_redirect');
+  } catch {
+    skipSuperAdminRedirect = false;
+  }
+
+
   // Primeiro acesso após remix: super admin vai direto ao painel global
   // para concluir senha + configuração inicial. Após isso, fluxo normal.
-  if (isSuperAdmin() && shouldForceSetup) {
+  if (isSuperAdmin() && shouldForceSetup && !skipSuperAdminRedirect) {
     return <Navigate to="/super-admin" replace />;
   }
 
@@ -303,7 +314,7 @@ const Index = () => {
 
   // Super Admin nunca fica preso no EmptyState: vai direto ao painel global
   // para configurar a plataforma. Independente do estado de platform_settings.
-  if (isSuperAdmin() && products.length === 0) {
+  if (isSuperAdmin() && products.length === 0 && !skipSuperAdminRedirect) {
     return <Navigate to="/super-admin" replace />;
   }
 
