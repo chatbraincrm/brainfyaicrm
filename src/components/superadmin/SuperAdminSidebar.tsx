@@ -97,7 +97,9 @@ function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarC
       console.warn('Não foi possível persistir o retorno ao app:', error);
     }
     onNavigate?.();
-    navigate(profile?.organization_id ? '/admin' : '/', { replace: true });
+    // Vai sempre para "/" — o Index.tsx decide se mostra o app do vendedor
+    // ou redireciona para /admin quando o usuário também é admin sem produtos.
+    navigate('/', { replace: true });
   };
 
   return (
