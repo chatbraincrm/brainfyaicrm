@@ -554,7 +554,16 @@ export function useSendAgentMessage() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to send message');
+      if (!res.ok) {
+        let message = 'Failed to send message';
+        try {
+          const data = await res.json();
+          message = data?.details || data?.error || data?.message || message;
+        } catch (_) {
+          // Keep default message when backend returns a non-JSON response.
+        }
+        throw new Error(message);
+      }
       return res.json();
     },
     // Optimistic update - show message immediately.

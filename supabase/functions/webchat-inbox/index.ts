@@ -588,8 +588,9 @@ serve(async (req) => {
         .single();
 
       if (msgError) {
+        console.error('[webchat-inbox] message insert error:', msgError);
         return new Response(
-          JSON.stringify({ error: 'Failed to send message' }),
+          JSON.stringify({ error: 'Failed to send message', details: msgError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
