@@ -468,10 +468,10 @@ export function SellerInbox({ productId, pendingConversationId, onConversationSe
         replyToMessageId,
         media,
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Erro ao enviar',
-        description: 'Não foi possível enviar a mensagem.',
+        description: error?.message || 'Não foi possível enviar a mensagem.',
         variant: 'destructive',
       });
     }
