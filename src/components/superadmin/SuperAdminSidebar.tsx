@@ -73,7 +73,7 @@ interface SidebarContentProps extends SuperAdminSidebarProps {
 
 function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarContentProps) {
   const { theme, setTheme } = useTheme();
-  const { profile, signOut } = useAuth();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
