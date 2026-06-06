@@ -73,7 +73,7 @@ interface SidebarContentProps extends SuperAdminSidebarProps {
 
 function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarContentProps) {
   const { theme, setTheme } = useTheme();
-  const { signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -88,6 +88,12 @@ function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarC
   const handleSelect = (id: string) => {
     onSectionChange(id);
     onNavigate?.();
+  };
+
+  const handleBackToApp = () => {
+    try { sessionStorage.setItem('skip_super_admin_redirect', '1'); } catch {}
+    onNavigate?.();
+    navigate(profile?.organization_id ? '/admin' : '/', { replace: true });
   };
 
   return (
@@ -151,18 +157,10 @@ function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarC
 
       {/* Footer */}
       <div className="p-3 border-t border-border space-y-2">
-        <Link
-          to="/"
-          onClick={() => {
-            try { sessionStorage.setItem('skip_super_admin_redirect', '1'); } catch {}
-            onNavigate?.();
-          }}
-        >
-          <Button variant="ghost" className="w-full justify-start gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar ao App
-          </Button>
-        </Link>
+        <Button variant="ghost" className="w-full justify-start gap-2" onClick={handleBackToApp}>
+          <ArrowLeft className="h-4 w-4" />
+          Voltar ao App
+        </Button>
 
         <Button
           variant="ghost"
