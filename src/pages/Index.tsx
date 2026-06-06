@@ -284,9 +284,11 @@ const Index = () => {
   let skipSuperAdminRedirect = false;
   try {
     skipSuperAdminRedirect = sessionStorage.getItem('skip_super_admin_redirect') === '1';
+    if (skipSuperAdminRedirect) sessionStorage.removeItem('skip_super_admin_redirect');
   } catch {
     skipSuperAdminRedirect = false;
   }
+
 
   // Primeiro acesso após remix: super admin vai direto ao painel global
   // para concluir senha + configuração inicial. Após isso, fluxo normal.
