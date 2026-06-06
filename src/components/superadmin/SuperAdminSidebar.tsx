@@ -73,7 +73,7 @@ interface SidebarContentProps extends SuperAdminSidebarProps {
 
 function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarContentProps) {
   const { theme, setTheme } = useTheme();
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -91,15 +91,8 @@ function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarC
   };
 
   const handleBackToApp = () => {
-    try {
-      sessionStorage.setItem('skip_super_admin_redirect', '1');
-    } catch (error) {
-      console.warn('Não foi possível persistir o retorno ao app:', error);
-    }
     onNavigate?.();
-    // Vai sempre para "/" — o Index.tsx decide se mostra o app do vendedor
-    // ou redireciona para /admin quando o usuário também é admin sem produtos.
-    navigate('/', { replace: true });
+    navigate(profile?.organization_id ? '/admin' : '/?app=1', { replace: true });
   };
 
   return (

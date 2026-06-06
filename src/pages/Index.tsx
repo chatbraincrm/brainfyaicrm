@@ -279,15 +279,9 @@ const Index = () => {
     return <InitialLoadingScreen />;
   }
 
-  // "Voltar ao App" no painel super admin grava esta flag para evitar
-  // que os redirects abaixo joguem o usuário de volta ao /super-admin.
-  let skipSuperAdminRedirect = false;
-  try {
-    skipSuperAdminRedirect = sessionStorage.getItem('skip_super_admin_redirect') === '1';
-    if (skipSuperAdminRedirect) sessionStorage.removeItem('skip_super_admin_redirect');
-  } catch {
-    skipSuperAdminRedirect = false;
-  }
+  // Fallback para super admins sem empresa vinculada: /?app=1 evita
+  // o redirect automático ao painel global sem depender de sessionStorage.
+  const skipSuperAdminRedirect = searchParams.get('app') === '1';
 
 
   // Primeiro acesso após remix: super admin vai direto ao painel global
