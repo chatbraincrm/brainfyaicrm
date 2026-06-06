@@ -1,0 +1,1 @@
+ALTER VIEW public.platform_branding_public SET (security_invoker = false);
