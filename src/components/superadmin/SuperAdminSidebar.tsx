@@ -91,7 +91,11 @@ function SidebarContent({ activeSection, onSectionChange, onNavigate }: SidebarC
   };
 
   const handleBackToApp = () => {
-    try { sessionStorage.setItem('skip_super_admin_redirect', '1'); } catch {}
+    try {
+      sessionStorage.setItem('skip_super_admin_redirect', '1');
+    } catch (error) {
+      console.warn('Não foi possível persistir o retorno ao app:', error);
+    }
     onNavigate?.();
     navigate(profile?.organization_id ? '/admin' : '/', { replace: true });
   };
