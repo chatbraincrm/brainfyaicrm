@@ -529,13 +529,13 @@ serve(async (req) => {
         );
       }
 
-      // Verify agent has access to conversation
-      const { data: conversation, error: convError } = await supabase
+      // Verify agent has access to conversation (super_admin bypassa org filter)
+      let convQ = supabase
         .from('webchat_conversations')
-        .select('id, assigned_user_id, status, channel, visitor_phone, evolution_instance_id, instagram_connection_id, ig_sender_id')
-        .eq('id', body.conversation_id)
-        .eq('organization_id', orgId)
-        .single();
+        .select('id, assigned_user_id, status, channel, visitor_phone, evolution_instance_id, instagram_connection_id, ig_sender_id, organization_id')
+        .eq('id', body.conversation_id);
+      if (orgId) convQ = convQ.eq('organization_id', orgId);
+      const { data: conversation, error: convError } = await convQ.single();
 
       if (convError || !conversation) {
         return new Response(
@@ -543,6 +543,9 @@ serve(async (req) => {
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // orgId efetivo para super_admin: usa o da conversa
+      const effectiveOrgId = orgId || (conversation as any).organization_id;
 
       // Auto-assign if not assigned — atendente único: limpa IA
       if (!conversation.assigned_user_id) {
