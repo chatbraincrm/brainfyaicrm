@@ -67,22 +67,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Avoid duplicate fetches for the same user (getSession + onAuthStateChange race)
   const lastFetchedUserRef = useRef<string | null>(null);
+  // Hard timeout ref so we can cancel it as soon as auth resolves (success or failure).
+  const hardTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  const releaseLoading = () => {
+    if (hardTimeoutRef.current) {
+      clearTimeout(hardTimeoutRef.current);
+      hardTimeoutRef.current = null;
+    }
+    if (mountedRef.current) setIsLoading(false);
+  };
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
-    // Hard safety net: never block the UI on auth more than 8s
-    const hardTimeout = setTimeout(() => {
-      if (mounted) {
+    // Hard safety net: never block the UI on auth more than 15s.
+    // Cancelled as soon as fetchUserData / getSession resolves so we don't
+    // emit the warning repeatedly on slow networks.
+    hardTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current) {
         console.warn('[auth] hard timeout reached — releasing isLoading');
         setIsLoading(false);
       }
-    }, 8000);
+      hardTimeoutRef.current = null;
+    }, 15000);
 
     // 1) Set up auth state listener BEFORE checking session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, nextSession) => {
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         setSession(nextSession);
         setUser(nextSession?.user ?? null);
 
@@ -91,14 +105,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           lastFetchedUserRef.current = nextSession.user.id;
           // Defer to avoid Supabase deadlock
           setTimeout(() => {
-            if (mounted) fetchUserData(nextSession.user.id);
+            if (mountedRef.current) fetchUserData(nextSession.user.id);
           }, 0);
         } else {
           lastFetchedUserRef.current = null;
           setProfile(null);
           setRoles([]);
           setPermissions(null);
-          setIsLoading(false);
+          releaseLoading();
         }
       }
     );
@@ -106,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 2) Restore session from storage
     withTimeout(supabase.auth.getSession(), 6000, 'getSession')
       .then(({ data: { session: existing } }) => {
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         setSession(existing);
         setUser(existing?.user ?? null);
         if (existing?.user) {
@@ -114,19 +128,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           lastFetchedUserRef.current = existing.user.id;
           fetchUserData(existing.user.id);
         } else {
-          setIsLoading(false);
+          releaseLoading();
         }
       })
       .catch((err) => {
         console.warn('[auth] getSession failed:', err?.message || err);
-        if (mounted) setIsLoading(false);
+        releaseLoading();
       });
 
     return () => {
-      mounted = false;
-      clearTimeout(hardTimeout);
+      mountedRef.current = false;
+      if (hardTimeoutRef.current) {
+        clearTimeout(hardTimeoutRef.current);
+        hardTimeoutRef.current = null;
+      }
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUserData = async (userId: string) => {
@@ -168,7 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('[auth] fetchUserData error:', error);
     } finally {
-      setIsLoading(false);
+      // Cancel the hard timeout — auth resolved one way or another.
+      releaseLoading();
     }
   };
 
