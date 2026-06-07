@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useCreateDeal } from '@/hooks/useDeals';
 import { useAuth } from '@/hooks/useAuth';
-import { useProduct } from '@/hooks/useProducts';
+import { useProduct, useProducts } from '@/hooks/useProducts';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,26 +17,37 @@ interface DealModalProps {
   onClose: () => void;
   leadId: string;
   leadName: string;
-  productId: string;
+  productId?: string | null;
   organizationId: string;
 }
 
 export function DealModal({ isOpen, onClose, leadId, leadName, productId, organizationId }: DealModalProps) {
   const { user } = useAuth();
   const createDeal = useCreateDeal();
-  const { data: product } = useProduct(productId);
+  const { data: allProducts = [] } = useProducts();
+  const [chosenProductId, setChosenProductId] = useState<string>('');
+
+  const effectiveProductId = productId || chosenProductId;
+  const { data: product } = useProduct(effectiveProductId || '');
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [dealValue, setDealValue] = useState('');
   const [notes, setNotes] = useState('');
 
+  const orgProducts = useMemo(
+    () => allProducts.filter((p: any) => p.organization_id === organizationId),
+    [allProducts, organizationId]
+  );
+
   const activePlans: ProductPlan[] = ((product?.pricing as unknown as ProductPlan[]) || []).filter(p => p.active);
   const hasPlans = activePlans.length > 0;
+  const needsProduct = !productId;
 
   useEffect(() => {
     if (!isOpen) {
       setSelectedPlanId('');
       setDealValue('');
       setNotes('');
+      setChosenProductId('');
     }
   }, [isOpen]);
 
@@ -49,10 +60,14 @@ export function DealModal({ isOpen, onClose, leadId, leadName, productId, organi
   };
 
   const handleSubmit = async () => {
-    // Brazilian format: "2.497,00" → remove thousand separators (.) then convert decimal (,) to .
+    if (!effectiveProductId) {
+      toast.error('Selecione um produto');
+      return;
+    }
+
     const normalized = dealValue.replace(/\./g, '').replace(',', '.');
     const value = parseFloat(normalized.replace(/[^\d.-]/g, ''));
-    
+
     if (!value || value <= 0) {
       toast.error('Digite um valor válido');
       return;
@@ -63,7 +78,7 @@ export function DealModal({ isOpen, onClose, leadId, leadName, productId, organi
     try {
       await createDeal.mutateAsync({
         lead_id: leadId,
-        product_id: productId,
+        product_id: effectiveProductId,
         seller_id: user?.id || '',
         organization_id: organizationId,
         deal_value: value,
@@ -76,10 +91,11 @@ export function DealModal({ isOpen, onClose, leadId, leadName, productId, organi
       toast.success('Negócio registrado! Comissão calculada automaticamente.', {
         icon: <PartyPopper className="h-5 w-5" />
       });
-      
+
       onClose();
-    } catch (error) {
-      toast.error('Erro ao registrar negócio');
+    } catch (error: any) {
+      console.error('[DealModal] Erro ao registrar negócio:', error);
+      toast.error(error?.message || 'Erro ao registrar negócio');
     }
   };
 
@@ -107,8 +123,27 @@ export function DealModal({ isOpen, onClose, leadId, leadName, productId, organi
             Registre o valor do negócio com <strong>{leadName}</strong>
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-4 py-4">
+          {needsProduct && (
+            <div className="space-y-2">
+              <Label>Produto *</Label>
+              <Select value={chosenProductId} onValueChange={(v) => { setChosenProductId(v); setSelectedPlanId(''); setDealValue(''); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orgProducts.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {orgProducts.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhum produto cadastrado para esta empresa.</p>
+              )}
+            </div>
+          )}
+
           {hasPlans && (
             <div className="space-y-2">
               <Label>Plano *</Label>
@@ -148,7 +183,7 @@ export function DealModal({ isOpen, onClose, leadId, leadName, productId, organi
               <p className="text-xs text-muted-foreground">Valor definido pelo plano selecionado</p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="notes">Observações (opcional)</Label>
             <Textarea
@@ -165,7 +200,10 @@ export function DealModal({ isOpen, onClose, leadId, leadName, productId, organi
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={createDeal.isPending || (hasPlans && !selectedPlanId)}>
+          <Button
+            onClick={handleSubmit}
+            disabled={createDeal.isPending || !effectiveProductId || (hasPlans && !selectedPlanId)}
+          >
             Registrar Negócio
           </Button>
         </DialogFooter>
