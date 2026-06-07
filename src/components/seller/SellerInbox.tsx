@@ -1161,7 +1161,7 @@ export function SellerInbox({ productId, pendingConversationId, onConversationSe
               onClose={() => setShowCreateDeal(false)}
               leadId={linkedLead.id}
               leadName={linkedLead.name || selectedConversation.visitor_name || 'Lead'}
-              productId={linkedLead.product_id}
+              productId={linkedLead.product_id || selectedConversation.product_id || null}
               organizationId={profile.organization_id}
             />
           )}
