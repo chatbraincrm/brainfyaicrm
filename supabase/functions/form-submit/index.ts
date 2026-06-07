@@ -10,25 +10,15 @@ type FormOptionAction =
   | { type: 'redirect'; url: string; new_tab?: boolean }
   | { type: 'add_tags'; tag_ids: string[] }
   | { type: 'start_ai_agent'; agent_id: string }
-  | { type: 'start_ai_outreach'; agent_id: string; objective?: string }
   | { type: 'open_calendar'; event_type_id: string; ask_email?: boolean }
   | { type: 'assign_sector'; sector_id: string }
   | { type: 'assign_user'; user_id: string; as?: 'human' | 'closer' | 'sdr' }
   | { type: 'go_to_block'; target_block_id: string };
 
-interface SelectedOption {
-  block_id: string;
-  block_label: string;
-  option_value: string;
-  option_label: string;
-  triggered_actions: string[];
-}
-
 interface SubmitRequest {
   form_id: string;
   responses: Record<string, unknown>;
   selected_actions?: FormOptionAction[];
-  selected_options?: SelectedOption[];
   tracking?: {
     utm_source?: string;
     utm_medium?: string;
@@ -59,7 +49,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { form_id, responses, tracking = {}, selected_actions = [], selected_options = [] }: SubmitRequest = await req.json();
+    const { form_id, responses, tracking = {}, selected_actions = [] }: SubmitRequest = await req.json();
 
     if (!form_id) {
       return new Response(JSON.stringify({ error: 'form_id is required' }), {
@@ -318,8 +308,6 @@ Deno.serve(async (req) => {
     let actionSdrId: string | null = null;
     let actionCloserId: string | null = null;
     let openCalendarAction: Extract<FormOptionAction, { type: 'open_calendar' }> | null = null;
-    let outreachAgentId: string | null = null;
-    let outreachObjective: string | null = null;
 
     for (const a of selected_actions || []) {
       if (!a || typeof a !== 'object') continue;
@@ -339,12 +327,6 @@ Deno.serve(async (req) => {
           break;
         case 'start_ai_agent':
           if (a.agent_id) actionAgentId = a.agent_id;
-          break;
-        case 'start_ai_outreach':
-          if (a.agent_id) {
-            outreachAgentId = a.agent_id;
-            outreachObjective = a.objective || null;
-          }
           break;
         case 'redirect':
           if (a.url) {
@@ -487,7 +469,6 @@ Deno.serve(async (req) => {
         form_name: form.name,
         form_responses: { ...((existingLead?.metadata || {}).form_responses || {}), ...responsesWithLabels },
         form_score: totalScore,
-        form_selected_options: selected_options,
         custom_fields: {
           ...(((existingLead?.metadata || {}).custom_fields) || {}),
           ...customFields,
@@ -608,25 +589,14 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Interaction record — include readable trail of which option triggered which actions
-        const optionsTrail = (selected_options || [])
-          .map((o) => {
-            const actsLabel = (o.triggered_actions || []).length
-              ? ` → ${o.triggered_actions.join(', ')}`
-              : '';
-            return `• ${o.block_label || 'Pergunta'}: "${o.option_label}"${actsLabel}`;
-          })
-          .join('\n');
-        const interactionContent = optionsTrail
-          ? `Formulário preenchido: ${form.name}\n\nEscolhas:\n${optionsTrail}`
-          : `Formulário preenchido: ${form.name}`;
+        // Interaction record
         await supabase
           .from('interactions')
           .insert({
             lead_id: leadId,
             channel: 'other',
             direction: 'inbound',
-            content: interactionContent,
+            content: `Formulário preenchido: ${form.name}`,
             metadata: {
               type: 'form_submission',
               form_id: form.id,
@@ -634,7 +604,6 @@ Deno.serve(async (req) => {
               applied_tag_ids: Array.from(addTagIds),
               stage_id: targetStageId,
               temperature: targetTemperature,
-              selected_options,
             },
           });
 
@@ -658,61 +627,17 @@ Deno.serve(async (req) => {
             console.error('[form-submit] cadence-enroll wrap non-fatal:', e);
           }
         }
-
-        // Proactive WhatsApp outreach by AI agent (start_ai_outreach action)
-        if (outreachAgentId && leadData.phone) {
-          try {
-            const supabaseUrl2 = Deno.env.get('SUPABASE_URL')!;
-            const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-            // Build a readable form-context string for the AI prompt
-            const optionsTrail = (selected_options || [])
-              .map((o) => `• ${o.block_label || 'Pergunta'}: "${o.option_label}"`)
-              .join('\n');
-            const respLines = Object.entries(responses || {})
-              .filter(([, v]) => v !== null && v !== undefined && v !== '')
-              .slice(0, 20)
-              .map(([k, v]) => `- ${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`)
-              .join('\n');
-            const extraContext = [
-              `Lead acabou de preencher o formulário "${form.name}".`,
-              optionsTrail ? `\nOpção(ões) escolhida(s):\n${optionsTrail}` : '',
-              respLines ? `\nRespostas:\n${respLines}` : '',
-            ].filter(Boolean).join('\n');
-
-            fetch(`${supabaseUrl2}/functions/v1/manual-outreach`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
-              body: JSON.stringify({
-                lead_ids: [leadId],
-                agent_id: outreachAgentId,
-                organization_id: form.organization_id,
-                objective: outreachObjective || `Continuar a conversa iniciada no formulário "${form.name}" e ajudar o lead pelo WhatsApp.`,
-                extra_context: extraContext,
-                mode: 'direct',
-              }),
-            }).catch((e) => console.error('[form-submit] manual-outreach non-fatal:', e));
-          } catch (e) {
-            console.error('[form-submit] manual-outreach wrap non-fatal:', e);
-          }
-        } else if (outreachAgentId && !leadData.phone) {
-          console.warn('[form-submit] start_ai_outreach configurado mas lead sem telefone — pulando.');
-        }
       }
     }
 
 
-    // 8. Create submission record — embed selected_options under __meta so downstream
-    // consumers (CRM, webhooks, exports) can see which option triggered which actions.
-    const submissionResponses = {
-      ...responsesWithLabels,
-      __meta: { selected_options },
-    };
+    // 8. Create submission record
     const { data: submission, error: submissionError } = await supabase
       .from('form_submissions')
       .insert({
         form_id,
         lead_id: leadId,
-        responses: submissionResponses,
+        responses: responsesWithLabels,
         total_score: totalScore,
         tags: Array.from(addTagIds),
         utm_source: tracking.utm_source || null,
