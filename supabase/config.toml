@@ -1,1 +1,31 @@
-project_id = "bkolfbsnyfgkuuttqjkr"
+project_id = "ipktjvfhykxwwczuvokx"
+
+[functions.cakto-webhook]
+verify_jwt = false
+
+[functions.doppus-webhook]
+verify_jwt = false
+
+[functions.evolution-webhook]
+verify_jwt = false
+
+[functions.facebook-leads-webhook]
+verify_jwt = false
+
+[functions.funnel-execute-webhook]
+verify_jwt = false
+
+[functions.hotmart-webhook]
+verify_jwt = false
+
+[functions.instagram-webhook]
+verify_jwt = false
+
+[functions.meta-whatsapp-webhook]
+verify_jwt = false
+
+[functions.webhook-receiver]
+verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
