@@ -82,7 +82,7 @@ export function FormBlockPalette({ onDragStart, onBlockClick }: FormBlockPalette
   };
 
   return (
-    <div className="w-full md:w-56 bg-card md:border-r flex flex-col h-full">
+    <div className="w-56 bg-card border-r flex flex-col">
       <div className="p-4 border-b">
         <h3 className="font-semibold text-sm">Blocos</h3>
         <p className="text-xs text-muted-foreground mt-1">

@@ -88,7 +88,6 @@ export type FormOptionAction =
   | { type: 'redirect'; url: string; new_tab?: boolean }
   | { type: 'add_tags'; tag_ids: string[] }
   | { type: 'start_ai_agent'; agent_id: string }
-  | { type: 'start_ai_outreach'; agent_id: string; objective?: string }
   | { type: 'open_calendar'; event_type_id: string; ask_email?: boolean }
   | { type: 'assign_sector'; sector_id: string }
   | { type: 'assign_user'; user_id: string; as?: 'human' | 'closer' | 'sdr' }

@@ -77,7 +77,7 @@ export function FormDesignPanel({ form, onUpdateTheme }: FormDesignPanelProps) {
   };
 
   return (
-    <aside className="w-full md:w-80 shrink-0 md:border-l bg-card flex flex-col h-full">
+    <aside className="w-80 shrink-0 border-l bg-card flex flex-col h-full">
       <div className="px-4 py-3 border-b">
         <h3 className="font-semibold">Design do formulário</h3>
         <p className="text-xs text-muted-foreground">Ajustes refletem em tempo real no preview</p>

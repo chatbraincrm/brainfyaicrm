@@ -87,7 +87,7 @@ export function FormBlockEditor({
 
   if (!localBlock) {
     return (
-      <div className="w-full md:w-80 bg-card md:border-l flex items-center justify-center text-muted-foreground p-4 text-center">
+      <div className="w-80 bg-card border-l flex items-center justify-center text-muted-foreground p-4 text-center">
         <p>Selecione um bloco para editar suas propriedades</p>
       </div>
     );
@@ -240,7 +240,7 @@ export function FormBlockEditor({
   const showCrmSection = INPUT_BLOCK_TYPES.includes(localBlock.block_type);
 
   return (
-    <div className="w-full md:w-80 bg-card md:border-l flex flex-col h-full">
+    <div className="w-80 bg-card border-l flex flex-col h-full">
 
       {/* Header */}
       <div className={cn("p-4 flex items-center justify-between", categoryColor)}>
