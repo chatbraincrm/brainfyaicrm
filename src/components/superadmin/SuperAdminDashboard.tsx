@@ -198,22 +198,36 @@ export function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardProps = {
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
-            ) : !stats?.planDistribution || stats.planDistribution.length === 0 ? (
-              <div className="text-center text-sm text-muted-foreground py-8">
-                Nenhum plano cadastrado.<br />
-                Crie planos em <span className="font-medium text-foreground">Planos</span> para ver a distribuição aqui.
-              </div>
             ) : (
               <div className="space-y-3">
-                {stats.planDistribution.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
-                      <span className="font-medium">{p.name}</span>
-                    </div>
-                    <Badge variant="secondary">{p.count}</Badge>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-gray-400" />
+                    <span className="font-medium">Trial</span>
                   </div>
-                ))}
+                  <Badge variant="secondary">{stats?.planCounts?.trial || 0}</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-blue-500" />
+                    <span className="font-medium">Starter</span>
+                  </div>
+                  <Badge variant="secondary">{stats?.planCounts?.starter || 0}</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-primary" />
+                    <span className="font-medium">Pro</span>
+                  </div>
+                  <Badge variant="secondary">{stats?.planCounts?.pro || 0}</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-violet-500" />
+                    <span className="font-medium">Enterprise</span>
+                  </div>
+                  <Badge variant="secondary">{stats?.planCounts?.enterprise || 0}</Badge>
+                </div>
               </div>
             )}
           </CardContent>
