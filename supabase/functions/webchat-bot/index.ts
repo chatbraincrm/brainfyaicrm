@@ -3617,77 +3617,25 @@ REGRAS DE USO:
                     .single();
                   
                   if (hostProfile) {
-                    // Create calendar event (NUNCA enviar campos que não existem na tabela calendar_events,
-                    // ex.: location_details — isso fazia o insert falhar silenciosamente e o agendamento
-                    // ficava sem vínculo com a agenda interna nem ia para o Google).
-                    const locationDetailsText = eventType.location_details
-                      ? (typeof eventType.location_details === 'string'
-                          ? eventType.location_details
-                          : JSON.stringify(eventType.location_details))
-                      : null;
-
-                    const baseDescription = `Agendado via chat AI\nCliente: ${args.guest_name}\nEmail: ${args.guest_email}${args.guest_phone ? `\nTelefone: ${args.guest_phone}` : ''}`;
-                    const fullDescription = locationDetailsText
-                      ? `${baseDescription}\n\nLocal: ${locationDetailsText}`
-                      : baseDescription;
-
-                    // Resolve product_id do lead (para que o evento apareça quando o vendedor filtra por produto)
-                    let resolvedProductId: string | null = body.product_id || null;
-                    if (!resolvedProductId && leadId) {
-                      const { data: leadRow } = await supabase
-                        .from('leads')
-                        .select('product_id')
-                        .eq('id', leadId)
-                        .maybeSingle();
-                      resolvedProductId = leadRow?.product_id || null;
-                    }
-
-                    const { data: calendarEvent, error: calendarInsertError } = await supabase
+                    // Create calendar event
+                    const { data: calendarEvent } = await supabase
                       .from('calendar_events')
                       .insert({
                         title: `${eventType.name} - ${args.guest_name}`,
                         start_time: startTime.toISOString(),
                         end_time: endTime.toISOString(),
-                        timezone: 'America/Sao_Paulo',
                         user_id: scheduleUserId,
                         organization_id: hostProfile.organization_id,
-                        event_type: 'booking',
-                        status: 'confirmed',
-                        description: fullDescription,
-                        location: eventType.location_type || null,
+                        event_type: 'meeting',
+                        description: `Agendado via chat AI\nCliente: ${args.guest_name}\nEmail: ${args.guest_email}${args.guest_phone ? `\nTelefone: ${args.guest_phone}` : ''}`,
+                        location: eventType.location_type,
+                        location_details: eventType.location_details,
                         create_meet: eventType.create_meet ?? false,
-                        color: eventType.color || null,
-                        attendees: [{ email: args.guest_email, name: args.guest_name }],
-                        lead_id: leadId || null,
-                        product_id: resolvedProductId,
-                        metadata: {
-                          booking_event_type_id: eventType.id,
-                          guest_name: args.guest_name,
-                          guest_email: args.guest_email,
-                          guest_phone: args.guest_phone || null,
-                          source: 'webchat-bot',
-                        },
                       })
                       .select()
                       .single();
-
-                    if (calendarInsertError || !calendarEvent) {
-                      console.error('[webchat-bot] calendar_events insert failed:', calendarInsertError);
-                      responseContent = 'Tive um problema técnico para travar esse horário na agenda. Pode me dar 1 minutinho que eu confirmo com a equipe?';
-                      try {
-                        await supabase.from('notifications').insert({
-                          organization_id: hostProfile.organization_id,
-                          user_id: scheduleUserId,
-                          title: '⚠️ Falha ao criar agendamento via IA',
-                          message: `Não consegui criar o evento na agenda para ${args.guest_name} (${args.guest_email}) em ${args.preferred_date} ${args.preferred_time}. Verifique manualmente. Erro: ${calendarInsertError?.message || 'desconhecido'}`,
-                          type: 'system_alert',
-                          product_id: body.product_id || null,
-                        });
-                      } catch (_e) {}
-                      break; // sai do loop — não declarar "agendado com sucesso"
-                    }
-
-                    // Create booking request — calendar_event_id agora é OBRIGATÓRIO
+                    
+                    // Create booking request
                     await supabase.from('booking_requests').insert({
                       event_type_id: eventType.id,
                       host_user_id: scheduleUserId,
@@ -3697,9 +3645,8 @@ REGRAS DE USO:
                       guest_phone: args.guest_phone || null,
                       start_time: startTime.toISOString(),
                       end_time: endTime.toISOString(),
-                      timezone: 'America/Sao_Paulo',
                       status: 'confirmed',
-                      calendar_event_id: calendarEvent.id,
+                      calendar_event_id: calendarEvent?.id || null,
                       lead_id: leadId || null,
                     });
                     
@@ -3797,8 +3744,8 @@ REGRAS DE USO:
 
                     // === Notificações internas para a equipe ===
                     try {
-                      const formattedDateNotif = startTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' });
-                      const formattedTimeNotif = startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+                      const formattedDateNotif = startTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                      const formattedTimeNotif = startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                       const agentNameNotif = activeAgent?.name || 'IA';
                       const recipientIds = new Set<string>();
 
@@ -3850,8 +3797,8 @@ REGRAS DE USO:
                     }
                     
                     // Format confirmation for AI to relay
-                    const formattedDate = startTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' });
-                    const formattedTime = startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+                    const formattedDate = startTime.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+                    const formattedTime = startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                     
                     if (emailSent) {
                       responseContent = `✅ Reunião agendada com sucesso!\n\n📅 ${formattedDate} às ${formattedTime}\n📧 Confirmação enviada para ${args.guest_email}\n\nPosso ajudar com mais alguma coisa?`;

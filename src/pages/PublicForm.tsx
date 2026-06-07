@@ -209,37 +209,6 @@ export default function PublicForm() {
     return out;
   };
 
-  // Build a readable trail of which option in which block was chosen and which
-  // actions it triggered. Persisted in the submission + lead interaction so
-  // the CRM/webhook knows "lead picked 'Quero agendar' → open_calendar".
-  const collectSelectedOptions = () => {
-    const out: Array<{
-      block_id: string;
-      block_label: string;
-      option_value: string;
-      option_label: string;
-      triggered_actions: string[];
-    }> = [];
-    for (const b of blocks) {
-      if (!['select', 'multi_select'].includes(b.block_type)) continue;
-      const opts = (b.options as SelectOption[]) || [];
-      const val = responses[b.id];
-      const chosen = Array.isArray(val) ? val : (val != null && val !== '' ? [val] : []);
-      for (const v of chosen) {
-        const opt = opts.find((o) => o.value === v);
-        if (!opt) continue;
-        out.push({
-          block_id: b.id,
-          block_label: b.label || '',
-          option_value: String(opt.value),
-          option_label: opt.label || String(opt.value),
-          triggered_actions: (opt.actions || []).map((a) => a.type),
-        });
-      }
-    }
-    return out;
-  };
-
   const handleNext = () => {
     const err = validateBlock(currentBlock);
     if (err) {
@@ -321,7 +290,6 @@ export default function PublicForm() {
       };
 
       const selected_actions = collectAllSelectedActions();
-      const selected_options = collectSelectedOptions();
 
       const { data, error } = await supabase.functions.invoke('form-submit', {
         body: {
@@ -329,7 +297,6 @@ export default function PublicForm() {
           responses: cleanResponses,
           tracking,
           selected_actions,
-          selected_options,
         },
       });
 

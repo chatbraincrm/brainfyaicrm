@@ -2,10 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import {
-  ArrowLeft, Save, Eye, Smartphone, Monitor, Moon, Sun, Inbox,
-  PanelLeft, Settings2, Palette,
+import { 
+  ArrowLeft, Save, Eye, Smartphone, Monitor, Moon, Sun, Inbox
 } from 'lucide-react';
 import { useForm, useFormBlocks, useSaveFormBlocks, useUpdateForm } from '@/hooks/useForms';
 import { FormBlock, FormBlockType, FormTheme, createFormBlock } from '@/types/forms';
@@ -19,7 +17,6 @@ import { FormPublish } from './FormPublish';
 import { FormResponses } from './FormResponses';
 import { FormDesignPanel } from './FormDesignPanel';
 import { FormThemeWrapper } from './FormThemeWrapper';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface FormBuilderProps {
@@ -39,15 +36,6 @@ export function FormBuilder({ formId, onClose }: FormBuilderProps) {
   const [hasChanges, setHasChanges] = useState(false);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light');
-  const isMobile = useIsMobile();
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [designOpen, setDesignOpen] = useState(false);
-
-  // Auto-open editor sheet on mobile when a block is selected
-  useEffect(() => {
-    if (isMobile && selectedBlockId) setEditorOpen(true);
-  }, [isMobile, selectedBlockId]);
   
   // Initialize blocks from existing data
   useEffect(() => {
@@ -133,84 +121,49 @@ export function FormBuilder({ formId, onClose }: FormBuilderProps) {
   return (
     <div className="h-full min-h-0 flex flex-col bg-background rounded-lg border overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-3 md:px-4 py-2 md:py-3 border-b bg-card">
-        <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
-          <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 h-9 w-9">
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-card">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-sm md:text-lg font-bold truncate">{form.name}</h1>
-            <p className="text-xs md:text-sm text-muted-foreground truncate hidden md:block">
+          <div>
+            <h1 className="text-lg font-bold">{form.name}</h1>
+            <p className="text-sm text-muted-foreground">
               {form.products?.name} • {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
-            </p>
-            <p className="text-[11px] text-muted-foreground truncate md:hidden">
-              {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
             </p>
           </div>
         </div>
-
-        <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+        
+        <div className="flex items-center gap-3">
           {hasChanges && (
-            <Badge variant="secondary" className="animate-pulse hidden sm:inline-flex">
-              Não salvo
+            <Badge variant="secondary" className="animate-pulse">
+              Alterações não salvas
             </Badge>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSave}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSave} 
             disabled={saveBlocks.isPending || !hasChanges}
-            className="h-9 px-2 md:px-3"
           >
-            <Save className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">{saveBlocks.isPending ? 'Salvando...' : 'Salvar'}</span>
+            <Save className="h-4 w-4 mr-2" />
+            {saveBlocks.isPending ? 'Salvando...' : 'Salvar'}
           </Button>
-          <Button
-            size="sm"
-            onClick={handlePublish}
+          <Button 
+            size="sm" 
+            onClick={handlePublish} 
             disabled={form.status === 'active' || saveBlocks.isPending}
-            className="h-9 px-2 md:px-3"
           >
-            <Eye className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">{form.status === 'active' ? 'Publicado' : 'Publicar'}</span>
+            <Eye className="h-4 w-4 mr-2" />
+            {form.status === 'active' ? 'Publicado' : 'Publicar'}
           </Button>
         </div>
       </div>
-
-      {/* Mobile action bar — drawers for palette/editor/design */}
-      {isMobile && (activeTab === 'build' || activeTab === 'preview') && (
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
-          {activeTab === 'build' && (
-            <>
-              <Button variant="outline" size="sm" className="flex-1 h-9" onClick={() => setPaletteOpen(true)}>
-                <PanelLeft className="h-4 w-4 mr-2" /> Blocos
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 h-9"
-                onClick={() => setEditorOpen(true)}
-                disabled={!selectedBlock}
-              >
-                <Settings2 className="h-4 w-4 mr-2" />
-                {selectedBlock ? 'Editar' : 'Selecione'}
-              </Button>
-            </>
-          )}
-          {activeTab === 'preview' && (
-            <Button variant="outline" size="sm" className="flex-1 h-9" onClick={() => setDesignOpen(true)}>
-              <Palette className="h-4 w-4 mr-2" /> Personalizar
-            </Button>
-          )}
-        </div>
-      )}
-
       
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-3 md:px-4 border-b bg-card overflow-x-auto">
-          <TabsList className="h-12 bg-transparent p-0 gap-4 md:gap-6 w-max">
-
+        <div className="px-4 border-b bg-card">
+          <TabsList className="h-12 bg-transparent p-0 gap-6">
             <TabsTrigger 
               value="build" 
               className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none h-12 px-0"
@@ -252,13 +205,11 @@ export function FormBuilder({ formId, onClose }: FormBuilderProps) {
         
         {/* Build Tab */}
         <TabsContent value="build" className="flex-1 min-h-0 flex overflow-hidden m-0 data-[state=inactive]:hidden">
-          <div className="hidden md:flex">
-            <FormBlockPalette
-              onDragStart={() => {}}
-              onBlockClick={handleAddBlock}
-            />
-          </div>
-
+          <FormBlockPalette 
+            onDragStart={() => {}} 
+            onBlockClick={handleAddBlock}
+          />
+          
           <FormCanvas
             formId={formId}
             blocks={blocks}
@@ -269,22 +220,19 @@ export function FormBuilder({ formId, onClose }: FormBuilderProps) {
             onDeleteBlock={handleDeleteBlock}
             finalBlockId={(form.settings as any)?.final_block_id || null}
           />
-
-          <div className="hidden md:flex">
-            <FormBlockEditor
-              block={selectedBlock || null}
-              allBlocks={blocks}
-              form={form}
-              onUpdate={handleUpdateBlock}
-              onClose={() => setSelectedBlockId(null)}
-            />
-          </div>
+          
+          <FormBlockEditor
+            block={selectedBlock || null}
+            allBlocks={blocks}
+            form={form}
+            onUpdate={handleUpdateBlock}
+            onClose={() => setSelectedBlockId(null)}
+          />
 
         </TabsContent>
-
         
         {/* Design Tab — Live preview + visual controls */}
-        <TabsContent value="preview" className="flex-1 flex flex-col md:flex-row overflow-hidden m-0 data-[state=inactive]:hidden">
+        <TabsContent value="preview" className="flex-1 flex overflow-hidden m-0 data-[state=inactive]:hidden">
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-shrink-0 flex items-center justify-center gap-4 py-3 border-b bg-muted/30">
               {/* Device Toggle */}
@@ -322,14 +270,13 @@ export function FormBuilder({ formId, onClose }: FormBuilderProps) {
                 </Button>
               </div>
             </div>
-            <div className="flex-1 min-h-0 overflow-auto bg-muted/50 flex items-start justify-center p-3 md:p-6">
+            <div className="flex-1 min-h-0 overflow-auto bg-muted/50 flex items-start justify-center p-6">
               <div className={cn(
-                "bg-card rounded-xl shadow-2xl overflow-hidden transition-all w-full",
-                previewMode === 'mobile' ? 'md:w-[375px] max-w-[375px]' : 'max-w-2xl',
+                "bg-card rounded-xl shadow-2xl overflow-hidden transition-all",
+                previewMode === 'mobile' ? 'w-[375px]' : 'w-full max-w-2xl',
                 'min-h-[500px]',
                 previewTheme === 'dark' && 'dark'
               )}>
-
                 <FormThemeWrapper theme={form.theme}>
                   <FormLivePreview 
                     key={blocks.map(b => b.id).join('-')}
@@ -341,11 +288,8 @@ export function FormBuilder({ formId, onClose }: FormBuilderProps) {
               </div>
             </div>
           </div>
-          <div className="hidden md:flex">
-            <FormDesignPanel form={form} onUpdateTheme={handleUpdateTheme} />
-          </div>
+          <FormDesignPanel form={form} onUpdateTheme={handleUpdateTheme} />
         </TabsContent>
-
         
         {/* Settings Tab */}
         <TabsContent value="settings" className="flex-1 min-h-0 overflow-auto m-0 data-[state=inactive]:hidden">
@@ -364,56 +308,6 @@ export function FormBuilder({ formId, onClose }: FormBuilderProps) {
           <FormResponses formId={formId} />
         </TabsContent>
       </Tabs>
-
-      {/* Mobile Drawers */}
-      <Sheet open={paletteOpen} onOpenChange={setPaletteOpen}>
-        <SheetContent side="left" className="p-0 w-[88vw] max-w-sm flex flex-col">
-          <SheetHeader className="px-4 py-3 border-b">
-            <SheetTitle>Blocos</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <FormBlockPalette
-              onDragStart={() => {}}
-              onBlockClick={(t) => {
-                handleAddBlock(t);
-                setPaletteOpen(false);
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
-        <SheetContent side="right" className="p-0 w-[92vw] max-w-md flex flex-col">
-          <SheetHeader className="px-4 py-3 border-b">
-            <SheetTitle>Editar bloco</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <FormBlockEditor
-              block={selectedBlock || null}
-              allBlocks={blocks}
-              form={form}
-              onUpdate={handleUpdateBlock}
-              onClose={() => {
-                setSelectedBlockId(null);
-                setEditorOpen(false);
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={designOpen} onOpenChange={setDesignOpen}>
-        <SheetContent side="right" className="p-0 w-[92vw] max-w-md flex flex-col">
-          <SheetHeader className="px-4 py-3 border-b">
-            <SheetTitle>Personalizar</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <FormDesignPanel form={form} onUpdateTheme={handleUpdateTheme} />
-          </div>
-        </SheetContent>
-      </Sheet>
-
     </div>
   );
 }

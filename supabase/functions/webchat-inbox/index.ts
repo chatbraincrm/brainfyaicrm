@@ -529,13 +529,13 @@ serve(async (req) => {
         );
       }
 
-      // Verify agent has access to conversation (super_admin bypassa org filter)
-      let convQ = supabase
+      // Verify agent has access to conversation
+      const { data: conversation, error: convError } = await supabase
         .from('webchat_conversations')
-        .select('id, assigned_user_id, status, channel, visitor_phone, evolution_instance_id, instagram_connection_id, ig_sender_id, organization_id')
-        .eq('id', body.conversation_id);
-      if (orgId) convQ = convQ.eq('organization_id', orgId);
-      const { data: conversation, error: convError } = await convQ.single();
+        .select('id, assigned_user_id, status, channel, visitor_phone, evolution_instance_id, instagram_connection_id, ig_sender_id')
+        .eq('id', body.conversation_id)
+        .eq('organization_id', orgId)
+        .single();
 
       if (convError || !conversation) {
         return new Response(
@@ -543,9 +543,6 @@ serve(async (req) => {
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
-      // orgId efetivo para super_admin: usa o da conversa
-      const effectiveOrgId = orgId || (conversation as any).organization_id;
 
       // Auto-assign if not assigned — atendente único: limpa IA
       if (!conversation.assigned_user_id) {
@@ -588,9 +585,8 @@ serve(async (req) => {
         .single();
 
       if (msgError) {
-        console.error('[webchat-inbox] message insert error:', msgError);
         return new Response(
-          JSON.stringify({ error: 'Failed to send message', details: msgError.message }),
+          JSON.stringify({ error: 'Failed to send message' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -616,7 +612,7 @@ serve(async (req) => {
             const { data: inst } = await supabase
               .from('evolution_instances')
               .select('id')
-              .eq('organization_id', effectiveOrgId)
+              .eq('organization_id', orgId)
               .eq('status', 'connected')
               .order('is_default', { ascending: false })
               .order('created_at', { ascending: false })
@@ -642,7 +638,7 @@ serve(async (req) => {
               // TODOS os tipos de mídia (audio, image, video, document, sticker) usam /send/media.
               // O servidor Evolution Go não expõe /send/audio — áudio precisa ir como media com type=audio.
               evoBody = {
-                organization_id: effectiveOrgId,
+                organization_id: orgId,
                 instance_id: evoInstanceId,
                 type: 'media',
                 to: phone,
@@ -656,7 +652,7 @@ serve(async (req) => {
               };
             } else {
               evoBody = {
-                organization_id: effectiveOrgId,
+                organization_id: orgId,
                 instance_id: evoInstanceId,
                 type: 'text',
                 to: phone,
@@ -686,7 +682,7 @@ serve(async (req) => {
             }
           } else {
             // Sem instância Evolution conectada — marca falha visível
-            console.error('[webchat-inbox] No connected Evolution instance for org', effectiveOrgId);
+            console.error('[webchat-inbox] No connected Evolution instance for org', orgId);
             const baseMeta = (insertData.metadata as Record<string, unknown>) || {};
             await supabase
               .from('webchat_messages')
@@ -710,7 +706,7 @@ serve(async (req) => {
         try {
           const igBody: Record<string, unknown> = {
             connection_id: (conversation as any).instagram_connection_id,
-            organization_id: effectiveOrgId,
+            organization_id: orgId,
             conversation_id: body.conversation_id,
             recipient_id: (conversation as any).ig_sender_id,
           };

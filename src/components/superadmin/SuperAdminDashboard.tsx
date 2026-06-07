@@ -198,17 +198,12 @@ export function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardProps = {
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
-            ) : !stats?.planDistribution || stats.planDistribution.length === 0 ? (
-              <div className="text-center text-sm text-muted-foreground py-8">
-                Nenhum plano cadastrado.<br />
-                Crie planos em <span className="font-medium text-foreground">Planos</span> para ver a distribuição aqui.
-              </div>
             ) : (
               <div className="space-y-3">
-                {stats.planDistribution.map((p) => (
+                {stats?.planDistribution?.map((p) => (
                   <div key={p.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color || 'hsl(var(--primary))' }} />
                       <span className="font-medium">{p.name}</span>
                     </div>
                     <Badge variant="secondary">{p.count}</Badge>
