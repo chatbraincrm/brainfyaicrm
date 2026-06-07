@@ -91,9 +91,6 @@ export function ProductDashboard({ product, onNavigate }: ProductDashboardProps)
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{product.name}</h1>
-          {product.description && (
-            <p className="text-muted-foreground mt-1">{product.description}</p>
-          )}
         </div>
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
           Ativo
