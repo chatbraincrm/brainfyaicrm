@@ -20,7 +20,7 @@ function flattenObject(obj: any, prefix = ''): Record<string, any> {
   const result: Record<string, any> = {};
   
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const fullPath = prefix ? `${prefix}.${key}` : key;
       const value = obj[key];
       

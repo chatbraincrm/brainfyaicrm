@@ -41,7 +41,7 @@ if (typeof window !== "undefined" && "serviceWorker" in navigator) {
   })();
   const isPreviewHost =
     window.location.hostname.includes("id-preview--") ||
-    window.location.hostname.includes("lovableproject.com");
+    window.location.hostname.includes(".preview.");
 
   if (isPreviewHost || isInIframe || !import.meta.env.PROD) {
     navigator.serviceWorker

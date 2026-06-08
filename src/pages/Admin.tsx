@@ -167,10 +167,6 @@ export default function Admin() {
     }, 2500);
   }, []);
 
-  if (!isAdmin() && !isManager()) {
-    return <Navigate to="/" replace />;
-  }
-
   const handleSectionChange = useCallback((id: string) => {
     // Garante que o chunk começa a baixar antes da transição (caso ainda
     // não tenha sido prefechado).
@@ -181,6 +177,10 @@ export default function Admin() {
     setSearchParams(next, { replace: true });
     startTransition(() => setActiveSection(id));
   }, [searchParams, setSearchParams]);
+
+  if (!isAdmin() && !isManager()) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleProductSelect = (productId: string) => {
     setSelectedProductId(productId);

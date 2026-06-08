@@ -87,6 +87,7 @@ serve(async (req) => {
       } else {
         // Unknown binary: try AI extraction as fallback
         const rawText = await fileData.text();
+        // eslint-disable-next-line no-control-regex
         const nonPrintable = (rawText.match(/[\x00-\x08\x0E-\x1F\x7F-\x9F]/g) || []).length;
         if (nonPrintable > rawText.length * 0.05) {
           // Binary file - try as PDF
@@ -131,6 +132,7 @@ serve(async (req) => {
     }
 
     // Store faithfully - remove null bytes and truncate at 50k chars for DB safety
+    // eslint-disable-next-line no-control-regex
     const extractedContent = fileContent.replace(/\u0000/g, '').substring(0, 50000);
 
     const { error: updateError } = await supabase

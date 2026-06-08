@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,212 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+
+interface AiAgentOutreachConfigProps {
+  config: WebhookActionConfig;
+  setConfig: React.Dispatch<React.SetStateAction<WebhookActionConfig>>;
+}
+
+function AiAgentOutreachConfig({ config, setConfig }: AiAgentOutreachConfigProps) {
+  const [agents, setAgents] = useState<Array<{ id: string; name: string; agent_type: string }>>([]);
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      const { data } = await supabase
+        .from('product_agents')
+        .select('id, name, agent_type')
+        .eq('is_active', true)
+        .order('name');
+      if (data) setAgents(data);
+    };
+    fetchAgents();
+  }, []);
+
+  return (
+    <div className="space-y-5">
+      {/* Agent Selection */}
+      <div className="space-y-2">
+        <Label>Agente IA *</Label>
+        <Select
+          value={config.ai_agent_id || ''}
+          onValueChange={(v) => setConfig(prev => ({ ...prev, ai_agent_id: v }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o agente" />
+          </SelectTrigger>
+          <SelectContent>
+            {agents.map((agent) => (
+              <SelectItem key={agent.id} value={agent.id}>
+                {agent.name} ({agent.agent_type})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {agents.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            Nenhum agente IA encontrado. Crie um agente no produto primeiro.
+          </p>
+        )}
+      </div>
+
+      {/* Objective */}
+      <div className="space-y-2">
+        <Label>Objetivo da Abordagem *</Label>
+        <Input
+          placeholder="Ex: Qualificar o lead e agendar uma call"
+          value={config.ai_objective || ''}
+          onChange={(e) => setConfig(prev => ({ ...prev, ai_objective: e.target.value }))}
+        />
+        <p className="text-xs text-muted-foreground">
+          Instrução principal que o agente seguirá ao abordar o lead.
+        </p>
+      </div>
+
+      {/* Extra Context */}
+      <div className="space-y-2">
+        <Label>Contexto Extra (opcional)</Label>
+        <Textarea
+          placeholder="Ex: O lead veio da página de preços, provavelmente está comparando opções"
+          value={config.ai_extra_context || ''}
+          onChange={(e) => setConfig(prev => ({ ...prev, ai_extra_context: e.target.value }))}
+          rows={3}
+        />
+      </div>
+
+      {/* Follow-up Section */}
+      <div className="border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm font-medium">Follow-up Automático</Label>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Reenvia mensagem estratégica se o lead não responder
+            </p>
+          </div>
+          <Switch
+            checked={config.ai_followup_enabled || false}
+            onCheckedChange={(v) => setConfig(prev => ({ ...prev, ai_followup_enabled: v }))}
+          />
+        </div>
+
+        {config.ai_followup_enabled && (
+          <div className="space-y-5 pt-2">
+            {/* Business Hours */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Clock className="h-4 w-4" /> Horário Comercial
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  className="w-28"
+                  value={config.ai_business_hours_start || '09:00'}
+                  onChange={(e) => setConfig(prev => ({ ...prev, ai_business_hours_start: e.target.value }))}
+                />
+                <span className="text-sm text-muted-foreground">às</span>
+                <Input
+                  type="time"
+                  className="w-28"
+                  value={config.ai_business_hours_end || '18:00'}
+                  onChange={(e) => setConfig(prev => ({ ...prev, ai_business_hours_end: e.target.value }))}
+                />
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { day: 1, label: 'Seg' },
+                  { day: 2, label: 'Ter' },
+                  { day: 3, label: 'Qua' },
+                  { day: 4, label: 'Qui' },
+                  { day: 5, label: 'Sex' },
+                  { day: 6, label: 'Sáb' },
+                  { day: 0, label: 'Dom' },
+                ].map(({ day, label }) => {
+                  const days = config.ai_business_days || [1, 2, 3, 4, 5];
+                  const checked = days.includes(day);
+                  return (
+                    <div key={day} className="flex items-center gap-1.5">
+                      <Checkbox
+                        id={`day-${day}`}
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          const current = config.ai_business_days || [1, 2, 3, 4, 5];
+                          const next = v
+                            ? [...current, day]
+                            : current.filter(d => d !== day);
+                          setConfig(prev => ({ ...prev, ai_business_days: next }));
+                        }}
+                      />
+                      <label htmlFor={`day-${day}`} className="text-sm cursor-pointer">{label}</label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Follow-up Steps */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Etapas de Follow-up</Label>
+              {(config.ai_followup_steps || [{ delay_hours: 24 }]).map((step, idx) => (
+                <div key={idx} className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{idx + 1}º Follow-up</span>
+                    {(config.ai_followup_steps || []).length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          const steps = [...(config.ai_followup_steps || [])];
+                          steps.splice(idx, 1);
+                          setConfig(prev => ({ ...prev, ai_followup_steps: steps }));
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Esperar</Label>
+                    <Select
+                      value={String(step.delay_hours)}
+                      onValueChange={(v) => {
+                        const steps = [...(config.ai_followup_steps || [{ delay_hours: 24 }])];
+                        steps[idx] = { ...steps[idx], delay_hours: parseInt(v) };
+                        setConfig(prev => ({ ...prev, ai_followup_steps: steps }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 hora</SelectItem>
+                        <SelectItem value="2">2 horas</SelectItem>
+                        <SelectItem value="4">4 horas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  const steps = [...(config.ai_followup_steps || [{ delay_hours: 24 }])];
+                  steps.push({ delay_hours: 48 });
+                  setConfig(prev => ({ ...prev, ai_followup_steps: steps }));
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Adicionar etapa
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface ActionConfigDialogProps {
   open: boolean;
@@ -726,227 +932,6 @@ export function ActionConfigDialog({
     );
   };
 
-  const renderAiAgentOutreachConfig = () => {
-    const [agents, setAgents] = useState<Array<{ id: string; name: string; agent_type: string }>>([]);
-    
-    useEffect(() => {
-      const fetchAgents = async () => {
-        const { data } = await supabase
-          .from('product_agents')
-          .select('id, name, agent_type')
-          .eq('is_active', true)
-          .order('name');
-        if (data) setAgents(data);
-      };
-      fetchAgents();
-    }, []);
-
-    return (
-      <div className="space-y-5">
-        {/* Agent Selection */}
-        <div className="space-y-2">
-          <Label>Agente IA *</Label>
-          <Select
-            value={config.ai_agent_id || ''}
-            onValueChange={(v) => setConfig(prev => ({ ...prev, ai_agent_id: v }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o agente" />
-            </SelectTrigger>
-            <SelectContent>
-              {agents.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id}>
-                  {agent.name} ({agent.agent_type})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {agents.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              Nenhum agente IA encontrado. Crie um agente no produto primeiro.
-            </p>
-          )}
-        </div>
-
-        {/* Objective */}
-        <div className="space-y-2">
-          <Label>Objetivo da Abordagem *</Label>
-          <Input
-            placeholder="Ex: Qualificar o lead e agendar uma call"
-            value={config.ai_objective || ''}
-            onChange={(e) => setConfig(prev => ({ ...prev, ai_objective: e.target.value }))}
-          />
-          <p className="text-xs text-muted-foreground">
-            Instrução principal que o agente seguirá ao abordar o lead.
-          </p>
-        </div>
-
-        {/* Extra Context */}
-        <div className="space-y-2">
-          <Label>Contexto Extra (opcional)</Label>
-          <Textarea
-            placeholder="Ex: O lead veio da página de preços, provavelmente está comparando opções"
-            value={config.ai_extra_context || ''}
-            onChange={(e) => setConfig(prev => ({ ...prev, ai_extra_context: e.target.value }))}
-            rows={3}
-          />
-        </div>
-
-        {/* Follow-up Section */}
-        <div className="border rounded-lg p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">Follow-up Automático</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Reenvia mensagem estratégica se o lead não responder
-              </p>
-            </div>
-            <Switch
-              checked={config.ai_followup_enabled || false}
-              onCheckedChange={(v) => setConfig(prev => ({ ...prev, ai_followup_enabled: v }))}
-            />
-          </div>
-
-          {config.ai_followup_enabled && (
-            <div className="space-y-5 pt-2">
-              {/* Business Hours */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" /> Horário Comercial
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="time"
-                    className="w-28"
-                    value={config.ai_business_hours_start || '09:00'}
-                    onChange={(e) => setConfig(prev => ({ ...prev, ai_business_hours_start: e.target.value }))}
-                  />
-                  <span className="text-sm text-muted-foreground">às</span>
-                  <Input
-                    type="time"
-                    className="w-28"
-                    value={config.ai_business_hours_end || '18:00'}
-                    onChange={(e) => setConfig(prev => ({ ...prev, ai_business_hours_end: e.target.value }))}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    { day: 1, label: 'Seg' },
-                    { day: 2, label: 'Ter' },
-                    { day: 3, label: 'Qua' },
-                    { day: 4, label: 'Qui' },
-                    { day: 5, label: 'Sex' },
-                    { day: 6, label: 'Sáb' },
-                    { day: 0, label: 'Dom' },
-                  ].map(({ day, label }) => {
-                    const days = config.ai_business_days || [1, 2, 3, 4, 5];
-                    const checked = days.includes(day);
-                    return (
-                      <div key={day} className="flex items-center gap-1.5">
-                        <Checkbox
-                          id={`day-${day}`}
-                          checked={checked}
-                          onCheckedChange={(v) => {
-                            const current = config.ai_business_days || [1, 2, 3, 4, 5];
-                            const next = v
-                              ? [...current, day]
-                              : current.filter(d => d !== day);
-                            setConfig(prev => ({ ...prev, ai_business_days: next }));
-                          }}
-                        />
-                        <label htmlFor={`day-${day}`} className="text-sm cursor-pointer">{label}</label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Follow-up Steps */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Etapas de Follow-up</Label>
-                
-                {(config.ai_followup_steps || [{ delay_hours: 24 }]).map((step, idx) => (
-                  <div key={idx} className="border rounded-lg p-3 space-y-2 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{idx + 1}º Follow-up</span>
-                      {(config.ai_followup_steps || []).length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            const steps = [...(config.ai_followup_steps || [])];
-                            steps.splice(idx, 1);
-                            setConfig(prev => ({ ...prev, ai_followup_steps: steps }));
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Esperar</Label>
-                      <Select
-                        value={String(step.delay_hours)}
-                        onValueChange={(v) => {
-                          const steps = [...(config.ai_followup_steps || [{ delay_hours: 24 }])];
-                          steps[idx] = { ...steps[idx], delay_hours: parseInt(v) };
-                          setConfig(prev => ({ ...prev, ai_followup_steps: steps }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1 hora</SelectItem>
-                          <SelectItem value="2">2 horas</SelectItem>
-                          <SelectItem value="4">4 horas</SelectItem>
-                          <SelectItem value="6">6 horas</SelectItem>
-                          <SelectItem value="12">12 horas</SelectItem>
-                          <SelectItem value="24">1 dia</SelectItem>
-                          <SelectItem value="48">2 dias</SelectItem>
-                          <SelectItem value="72">3 dias</SelectItem>
-                          <SelectItem value="120">5 dias</SelectItem>
-                          <SelectItem value="168">7 dias</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Instrução para a IA (opcional)</Label>
-                      <Input
-                        placeholder="Ex: Reforce o benefício principal"
-                        value={step.instruction || ''}
-                        onChange={(e) => {
-                          const steps = [...(config.ai_followup_steps || [{ delay_hours: 24 }])];
-                          steps[idx] = { ...steps[idx], instruction: e.target.value };
-                          setConfig(prev => ({ ...prev, ai_followup_steps: steps }));
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    const steps = [...(config.ai_followup_steps || [{ delay_hours: 24 }])];
-                    steps.push({ delay_hours: 48 });
-                    setConfig(prev => ({ ...prev, ai_followup_steps: steps }));
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar etapa
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
 
   const renderTriggerFlowConfig = () => {
@@ -1135,7 +1120,7 @@ export function ActionConfigDialog({
       case 'notify_whatsapp':
         return renderNotifyWhatsappConfig();
       case 'ai_agent_outreach':
-        return renderAiAgentOutreachConfig();
+        return <AiAgentOutreachConfig config={config} setConfig={setConfig} />;
       case 'trigger_flow':
         return renderTriggerFlowConfig();
       default:

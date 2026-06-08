@@ -15,8 +15,8 @@ function normalizeUrl(value?: string | null): string | null {
 
 export function isEditorHost(hostname = typeof window !== 'undefined' ? window.location.hostname : ''): boolean {
   return (
-    hostname.endsWith('.lovableproject.com') ||
     hostname.includes('-preview--') ||
+    hostname.includes('.preview.') ||
     hostname === 'localhost' ||
     hostname === '127.0.0.1'
   );

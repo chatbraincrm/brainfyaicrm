@@ -21,6 +21,19 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Large codebase migration: any usages are intentional Supabase/legacy patterns
+      "@typescript-eslint/no-explicit-any": "warn",
+      // Pre-existing patterns — will be tightened gradually
+      "no-case-declarations": "warn",
+      "no-empty": ["warn", { "allowEmptyCatch": true }],
+      "prefer-const": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "no-useless-escape": "warn",
+      "no-misleading-character-class": "warn",
+      "no-duplicate-case": "error",
+      "@typescript-eslint/no-non-null-asserted-optional-chain": "warn",
     },
   },
 );

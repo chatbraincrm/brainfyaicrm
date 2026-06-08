@@ -5602,19 +5602,6 @@ async function executeFlowBlock(
           .eq('id', conversationId);
         break;
 
-      case 'tag':
-        // Add tag to lead (implementation would connect to leads table)
-        console.log('[executeFlowBlock] Tag applied:', currentBlock.data.tag_name, '=', currentBlock.data.tag_value);
-        
-        // Move to next block immediately
-        if (nextBlockId) {
-          const nextBlock = flow.blocks.find((b: FlowBlock) => b.id === nextBlockId);
-          if (nextBlock) {
-            return executeNextBlock(supabase, conversationId, flow, nextBlock, flowVariables);
-          }
-        }
-        break;
-
       case 'video':
         responseContent = currentBlock.data.video_title || 'Assista a este vídeo:';
         responseVideoUrl = currentBlock.data.video_url;
