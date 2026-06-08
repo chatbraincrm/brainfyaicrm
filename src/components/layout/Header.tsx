@@ -1,4 +1,4 @@
-import { User, Settings, LogOut, HelpCircle, Sparkles } from 'lucide-react';
+import { User, Settings, LogOut, HelpCircle, Sparkles, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -18,7 +18,7 @@ import { HeaderProductSwitcher } from '@/components/layout/HeaderProductSwitcher
 import { WhatsAppDisconnectedBanner } from '@/components/layout/WhatsAppDisconnectedBanner';
 import { Tables } from '@/integrations/supabase/types';
 import { useUnreadReleasesCount } from '@/hooks/useReleases';
-import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 type DBProduct = Tables<'products'>;
 
@@ -43,32 +43,26 @@ export function Header({
   const { profile, signOut } = useAuth();
   const { data: unreadReleases = 0 } = useUnreadReleasesCount();
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-  };
+  const getInitials = (name: string) =>
+    name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-30">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-md">
       <WhatsAppDisconnectedBanner />
-      <div className="flex items-center justify-between h-16 px-6">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+      <div className="flex items-center justify-between h-14 px-5 gap-4">
+
+        {/* ─── Left: Page Title ─── */}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base font-semibold text-foreground leading-tight truncate">{title}</h1>
           {subtitle && (
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            <p className="text-xs text-muted-foreground leading-tight truncate">{subtitle}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Product Switcher (replaces global search) */}
+        {/* ─── Right: Actions ─── */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+
+          {/* Product Switcher */}
           {assignedProducts.length > 0 && onSelectProductObject && (
             <HeaderProductSwitcher
               products={assignedProducts}
@@ -78,21 +72,31 @@ export function Header({
           )}
 
           {/* Help */}
-          <Button variant="ghost" size="icon" onClick={() => navigate('/ajuda')} title="Central de Ajuda">
-            <HelpCircle className="h-5 w-5" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/ajuda')}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            title="Ajuda"
+          >
+            <HelpCircle className="h-4 w-4" />
           </Button>
 
-          {/* Updates */}
-          <Button variant="ghost" size="icon" onClick={() => navigate('/novidades')} title="Novidades" className="relative">
-            <Sparkles className="h-5 w-5" />
+          {/* Novidades */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/novidades')}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground relative"
+            title="Novidades"
+          >
+            <Sparkles className="h-4 w-4" />
             {unreadReleases > 0 && (
-              <Badge variant="default" className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 text-[10px] flex items-center justify-center">
-                {unreadReleases > 9 ? '9+' : unreadReleases}
-              </Badge>
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
             )}
           </Button>
 
-          {/* Theme Toggle */}
+          {/* Theme */}
           <ThemeToggle />
 
           {/* User Status */}
@@ -101,37 +105,44 @@ export function Header({
           {/* Notifications */}
           <NotificationCenter />
 
-          {/* Profile Dropdown */}
+          {/* Divider */}
+          <div className="w-px h-5 bg-border mx-1" />
+
+          {/* Profile */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Avatar className="h-8 w-8">
+              <button className="flex items-center gap-2 h-8 pl-1 pr-2 rounded-lg hover:bg-muted transition-colors outline-none ring-0">
+                <Avatar className="h-7 w-7 ring-2 ring-primary/20">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60 text-primary-foreground text-xs">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-[10px] font-semibold">
                     {getInitials(profile?.full_name || 'U')}
                   </AvatarFallback>
                 </Avatar>
-              </Button>
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span>{profile?.full_name || 'Usuário'}</span>
-                  <span className="text-xs font-normal text-muted-foreground">{profile?.email}</span>
+            <DropdownMenuContent align="end" className="w-56 mt-1">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-sm text-foreground">{profile?.full_name || 'Usuário'}</span>
+                  <span className="text-xs text-muted-foreground truncate">{profile?.email}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/perfil')}>
-                <User size={16} />
+                <User className="h-4 w-4" />
                 Meu Perfil
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/configuracoes')}>
-                <Settings size={16} />
+                <Settings className="h-4 w-4" />
                 Configurações
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                <LogOut size={16} />
+              <DropdownMenuItem
+                onClick={() => signOut()}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>

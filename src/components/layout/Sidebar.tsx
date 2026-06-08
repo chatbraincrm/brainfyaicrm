@@ -1,27 +1,27 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  BookOpen, 
-  MessageSquareWarning, 
-  FolderOpen, 
-  Bot, 
+import {
+  LayoutDashboard,
+  Calendar,
+  BookOpen,
+  MessageSquareWarning,
+  FolderOpen,
+  Bot,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   Package,
   Users,
   CheckSquare,
-  ArrowLeft,
   DollarSign,
   Shield,
   MessageSquare,
   CalendarCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Logo } from '@/components/ui/Logo';
 import { Tables } from '@/integrations/supabase/types';
 import { prefetchIndexTab } from '@/pages/Index';
@@ -79,127 +79,137 @@ export function Sidebar({
     });
   };
 
+  const NavItem = ({
+    icon: Icon,
+    label,
+    isActive,
+    onClick,
+    onPrefetch,
+  }: {
+    icon: React.ElementType;
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+    onPrefetch?: () => void;
+  }) => {
+    const btn = (
+      <button
+        onClick={onClick}
+        onMouseEnter={onPrefetch}
+        onTouchStart={onPrefetch}
+        onFocus={onPrefetch}
+        className={cn(
+          "relative w-full flex items-center gap-3 rounded-lg transition-all duration-200 group",
+          collapsed ? "h-10 w-10 justify-center mx-auto px-0" : "px-3 h-9",
+          isActive
+            ? "bg-primary/12 text-primary"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        )}
+      >
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
+        )}
+        <Icon size={18} className="shrink-0" />
+        {!collapsed && (
+          <span className="text-sm font-medium leading-none">{label}</span>
+        )}
+      </button>
+    );
+
+    if (collapsed) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>{btn}</TooltipTrigger>
+          <TooltipContent side="right">{label}</TooltipContent>
+        </Tooltip>
+      );
+    }
+    return btn;
+  };
+
   return (
-    <aside 
-      className={cn(
-        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out",
-        "bg-sidebar border-r border-sidebar-border flex flex-col",
-        collapsed ? "w-16" : "w-64"
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
-        {!collapsed && <Logo size="md" />}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleCollapsed}
-          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </Button>
-      </div>
+    <TooltipProvider delayDuration={200}>
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 h-screen transition-all duration-300 ease-in-out",
+          "bg-sidebar border-r border-sidebar-border flex flex-col",
+          collapsed ? "w-[60px]" : "w-[220px]"
+        )}
+      >
+        {/* Logo */}
+        <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-3">
+          {!collapsed && <Logo size="md" />}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={toggleCollapsed}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+          >
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </Button>
+        </div>
 
-      {/* Product badge removido — troca de produto agora é feita pelo dropdown no header */}
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          
-          return (
-            <button
+        {/* Navigation */}
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavItem
               key={item.id}
+              icon={item.icon}
+              label={item.label}
+              isActive={activeTab === item.id}
               onClick={() => onTabChange(item.id)}
-              onMouseEnter={() => prefetchIndexTab(item.id)}
-              onTouchStart={() => prefetchIndexTab(item.id)}
-              onFocus={() => prefetchIndexTab(item.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                "text-sidebar-foreground hover:bg-sidebar-accent",
-                isActive && "bg-primary/10 text-primary"
-              )}
-            >
-              <Icon size={20} className={cn(isActive && "text-primary")} />
-              {!collapsed && (
-                <span className={cn(
-                  "text-sm font-medium",
-                  isActive && "text-primary"
-                )}>
-                  {item.label}
-                </span>
-              )}
-            </button>
-          );
-        })}
+              onPrefetch={() => prefetchIndexTab(item.id)}
+            />
+          ))}
 
-        {/* Lista de produtos atribuídos quando nenhum está selecionado */}
-        {!selectedProduct && !collapsed && (
-          <div className="px-1 py-2">
-            {assignedProducts.length === 0 ? (
-              <div className="px-3 py-8 text-center">
-                <Package className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  Nenhum produto atribuído
-                </p>
-              </div>
-            ) : (
-              <>
-                <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Meus Produtos
-                </p>
-                <div className="space-y-1">
-                  {assignedProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      onClick={() => onSelectProduct?.(product)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left",
-                        "text-sidebar-foreground hover:bg-sidebar-accent"
-                      )}
-                    >
-                      <Package size={16} className="text-muted-foreground shrink-0" />
-                      <span className="text-sm truncate">{product.name}</span>
-                    </button>
-                  ))}
+          {/* Assigned products when no product is selected */}
+          {!selectedProduct && !collapsed && (
+            <div className="pt-3">
+              {assignedProducts.length === 0 ? (
+                <div className="px-3 py-8 text-center">
+                  <Package className="h-7 w-7 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Nenhum produto atribuído
+                  </p>
                 </div>
-              </>
-            )}
-          </div>
-        )}
-      </nav>
+              ) : (
+                <>
+                  <p className="section-label px-3 mb-2">Meus Produtos</p>
+                  <div className="space-y-0.5">
+                    {assignedProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        onClick={() => onSelectProduct?.(product)}
+                        className="w-full flex items-center gap-2 px-3 h-9 rounded-lg transition-colors text-left text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      >
+                        <Package size={15} className="shrink-0" />
+                        <span className="text-sm truncate">{product.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </nav>
 
-      {/* Bottom Actions */}
-      <div className="px-3 py-4 border-t border-sidebar-border space-y-1">
-        {/* Super Admin Link */}
-        {showSuperAdminLink && (
-          <Link
-            to="/super-admin"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          >
-            <Shield size={20} className="text-violet-400" />
-            {!collapsed && <span className="text-sm">Super Admin</span>}
+        {/* Bottom Actions */}
+        <div className="px-2 py-3 border-t border-sidebar-border space-y-0.5">
+          {showSuperAdminLink && (
+            <Link to="/super-admin" className="block">
+              <NavItem icon={Shield} label="Super Admin" isActive={false} onClick={() => {}} />
+            </Link>
+          )}
+          {showAdminLink && (
+            <Link to="/admin" className="block">
+              <NavItem icon={Shield} label="Painel Admin" isActive={false} onClick={() => {}} />
+            </Link>
+          )}
+          <Link to="/configuracoes" className="block">
+            <NavItem icon={Settings} label="Configurações" isActive={false} onClick={() => {}} />
           </Link>
-        )}
-        {/* Admin Link */}
-        {showAdminLink && (
-          <Link
-            to="/admin"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          >
-            <Shield size={20} />
-            {!collapsed && <span className="text-sm">Painel Admin</span>}
-          </Link>
-        )}
-        <Link
-          to="/configuracoes"
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-        >
-          <Settings size={20} />
-          {!collapsed && <span className="text-sm">Configurações</span>}
-        </Link>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </TooltipProvider>
   );
 }

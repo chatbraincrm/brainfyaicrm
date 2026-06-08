@@ -59,12 +59,12 @@ export function MobileAdminLayout({
         onMouseEnter={() => !isDisabled && prefetchAdminSection(item.id)}
         disabled={isDisabled}
         className={cn(
-          'w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all',
+          'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
           isDisabled
-            ? 'text-foreground/50 cursor-not-allowed'
+            ? 'text-foreground/40 cursor-not-allowed'
             : isActive
-              ? 'bg-primary text-primary-foreground'
-              : 'text-foreground hover:bg-accent'
+              ? 'bg-primary/12 text-primary'
+              : 'text-foreground/70 hover:bg-accent hover:text-foreground'
         )}
       >
         <Icon className="h-5 w-5 flex-shrink-0" />

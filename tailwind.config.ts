@@ -2,22 +2,34 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        "2xs": ["0.65rem", { lineHeight: "1rem" }],
       },
       backgroundImage: {
-        'vendus-gradient': 'linear-gradient(135deg, #3F6212, #84CC16, #BEF264)',
+        "brainfy-gradient": "linear-gradient(135deg, #2D5A0E, #65A30D, #A3E635)",
+        "brainfy-gradient-h": "linear-gradient(90deg, #2D5A0E, #65A30D, #A3E635)",
+        "mesh-dark": `
+          radial-gradient(at 40% 20%, hsl(83 78% 52% / 0.06) 0px, transparent 50%),
+          radial-gradient(at 80% 0%, hsl(213 90% 60% / 0.04) 0px, transparent 50%),
+          radial-gradient(at 0% 50%, hsl(83 78% 52% / 0.04) 0px, transparent 50%)
+        `,
       },
       colors: {
         border: "hsl(var(--border))",
@@ -44,6 +56,10 @@ export default {
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -73,9 +89,28 @@ export default {
         },
       },
       borderRadius: {
+        "4xl": "2rem",
+        "3xl": "1.5rem",
+        "2xl": "1rem",
+        xl: "0.75rem",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        xs: "var(--shadow-xs)",
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        xl: "var(--shadow-xl)",
+        glow: "var(--shadow-glow)",
+        "glow-sm": "var(--shadow-glow-sm)",
+        "inner-sm": "inset 0 1px 2px hsl(222 45% 3% / 0.15)",
+      },
+      opacity: {
+        8: "0.08",
+        12: "0.12",
+        15: "0.15",
       },
       keyframes: {
         "accordion-down": {
@@ -86,12 +121,27 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "slide-in-left": {
+          from: { opacity: "0", transform: "translateX(-12px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "slide-in-right": {
+          from: { opacity: "0", transform: "translateX(12px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "count-up": {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "slide-in-left": "slide-in-left 0.25s ease-out both",
+        "slide-in-right": "slide-in-right 0.25s ease-out both",
+        "count-up": "count-up 0.3s ease-out both",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;

@@ -294,9 +294,9 @@ export default function Admin() {
         activeSection={activeSection}
         onSectionChange={handleSectionChange}
       />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto min-w-0">
         <OnboardingBanner />
-        <div className="p-6">
+        <div className="p-6 max-w-[1600px]">
           {renderContent()}
         </div>
       </main>
